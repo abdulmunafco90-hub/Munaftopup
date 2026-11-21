@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && (request.auth.token.admin == true || request.auth.token.superAdmin == true); }
+    function isSuperAdmin() { return signedIn() && request.auth.token.superAdmin == true; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['displayName', 'email', 'photoURL', 'createdAt', 'updatedAt'])
+        && request.resource.data.email == request.auth.token.email;
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']);
+      allow delete: if isSuperAdmin();
+    }
+
+    match /paymentSettings/bkashPersonal {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /paymentSettings/{settingsId} {
+      allow read, write: if false;
+    }
+    match /paymentRequests/{requestId} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    match /transactions/{transactionId} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    match /adminAuditLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+    match /reports/{reportId} {
+      allow read, write: if isAdmin();
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

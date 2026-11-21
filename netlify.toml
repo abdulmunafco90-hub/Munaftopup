@@ -1,0 +1,6 @@
+# This repository is a Firebase backend (Cloud Functions + Firestore/Storage rules).
+# It contains no web front end that needs compiling, so there is no build command.
+# Netlify publishes the static hosting folder declared in firebase.json ("hosting.public").
+[build]
+  command = ""
+  publish = "hosting-public"
